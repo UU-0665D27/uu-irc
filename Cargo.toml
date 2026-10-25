@@ -1,0 +1,34 @@
+[package]
+name = "uu-irc"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A trait-based IRC stack: message model, codec, framing and async transport."
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Only the async networking layer needs tokio. The message model, codec and
+# framer are dependency-free and can be used from `cargo-fuzz` (sync) directly.
+tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"], optional = true }
+# Structured logging. Optional so `--no-default-features` stays dependency-free.
+tracing = { version = "0.1", optional = true }
+
+[features]
+default = ["net", "tracing"]
+# Async transport + client built on tokio.
+net = ["dep:tokio"]
+# `trace!`/`debug!`/`info!`/`warn!`/`error!` logging through `tracing`.
+tracing = ["dep:tracing"]
+
+[[example]]
+name = "connect"
+required-features = ["net"]
+
+[[example]]
+name = "chat"
+required-features = ["net"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "net", "io-util", "macros", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
