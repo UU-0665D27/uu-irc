@@ -109,11 +109,9 @@ IRC_SERVER=irc.example.org IRC_NICK=uu IRC_NICKSERV_PASSWORD=example_secret_nick
 
 ### About the test server
 
-The address from the task, `[23228:39cf:5792:fbd1:d5c7:a750:7ab9:4389]:6667`,
-is **not valid IPv6**: each group is at most 4 hex digits, so `23228` cannot be
-the first group (it must be `0000`–`ffff`). Fix the address or pass the real one
-via `IRC_SERVER`; `DEFAULT_TEST_SERVER` in `src/lib.rs` is the only place it is
-hard-coded.
+The default test server is the Yggdrasil interface address
+`[228:39cf:5792:fbd1:d5c7:a750:7ab9:4389]:6667`, hard-coded as
+`DEFAULT_TEST_SERVER` in `src/lib.rs`. Override it with `IRC_SERVER`.
 
 ## Bidirectional reading
 

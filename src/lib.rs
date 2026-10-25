@@ -96,9 +96,5 @@ pub use crate::error::AddrError;
 #[cfg(feature = "net")]
 pub use crate::transport::{Connector, MockStream, Target, TcpConnector, Transport, memory_pair};
 
-/// The test server from the task description.
-///
-/// Note: `23228` is not a valid IPv6 group (each group is at most 4 hex digits,
-/// so the first group must be `0000`–`ffff`). Replace it with the real address,
-/// or set `IRC_SERVER`, and the examples/tests will use it.
-pub const DEFAULT_TEST_SERVER: &str = "[23228:39cf:5792:fbd1:d5c7:a750:7ab9:4389]:6667";
+/// The default test server: the Yggdrasil interface address.
+pub const DEFAULT_TEST_SERVER: &str = "[228:39cf:5792:fbd1:d5c7:a750:7ab9:4389]:6667";
