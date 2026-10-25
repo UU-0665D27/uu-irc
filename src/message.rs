@@ -442,6 +442,11 @@ impl Message {
 
     /// Parse a single line. Accepts arbitrary bytes and an optional trailing
     /// CR/LF; never panics.
+    ///
+    /// Invalid UTF-8 is replaced lossily with `U+FFFD`. If that expansion (or
+    /// tag/parameter re-escaping) would make the serialized line exceed
+    /// [`MAX_LINE`], the line is rejected with [`ParseError::TooLong`] so that
+    /// every accepted message still round-trips through the wire format.
     #[cfg_attr(not(feature = "tracing"), allow(unused_variables))]
     pub fn parse(bytes: &[u8]) -> Result<Self, ParseError> {
         trace!(len = bytes.len(), "parsing wire line");
@@ -457,7 +462,9 @@ impl Message {
             });
         }
         // Lossy conversion: invalid UTF-8 must not turn into a hard failure when
-        // fuzzing, it just gets replaced with U+FFFD.
+        // fuzzing, it just gets replaced with U+FFFD. One invalid byte becomes a
+        // three-byte character, though, so the encoded form can outgrow the
+        // input; check that below.
         let raw = String::from_utf8_lossy(bytes);
         let mut line = raw.as_ref();
         if let Some(l) = line.strip_suffix('\n') {
@@ -466,7 +473,17 @@ impl Message {
         if let Some(l) = line.strip_suffix('\r') {
             line = l;
         }
-        let parsed = Self::parse_str(line);
+        let parsed = Self::parse_str(line).and_then(|msg| {
+            let encoded_len = msg.to_string_line().len() + 2;
+            if encoded_len > MAX_LINE {
+                Err(ParseError::TooLong {
+                    len: encoded_len,
+                    max: MAX_LINE,
+                })
+            } else {
+                Ok(msg)
+            }
+        });
         match &parsed {
             Ok(msg) => trace!(
                 command = %msg.command,
@@ -690,6 +707,31 @@ mod tests {
             Message::parse(&big),
             Err(ParseError::TooLong { .. })
         ));
+    }
+
+    #[test]
+    fn rejects_line_that_expands_past_the_limit() {
+        // Each 0xff becomes a 3-byte U+FFFD, so this line is under MAX_LINE on
+        // the wire but over it once serialized again.
+        let mut input = b"PRIVMSG #c :".to_vec();
+        input.extend_from_slice(&[0xff; 8000]);
+        assert!(input.len() <= MAX_LINE);
+
+        match Message::parse(&input) {
+            Err(ParseError::TooLong { len, max }) => {
+                assert!(len > max);
+                assert_eq!(max, MAX_LINE);
+            }
+            other => panic!("expected TooLong, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn lossy_input_within_the_limit_round_trips() {
+        let raw = b"PRIVMSG #c :\xff\xfe";
+        let msg = Message::parse(raw).unwrap();
+        assert_eq!(msg.params[1], "\u{FFFD}\u{FFFD}");
+        assert_eq!(Message::parse(&msg.to_bytes()).unwrap(), msg);
     }
 
     #[test]

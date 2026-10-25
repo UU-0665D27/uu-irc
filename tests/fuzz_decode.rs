@@ -85,3 +85,16 @@ fn unterminated_input_is_still_decoded() {
     assert_eq!(results.len(), 1);
     assert!(results[0].is_ok());
 }
+
+#[test]
+fn lossy_utf8_expansion_cannot_break_the_round_trip() {
+    // Under MAX_LINE on the wire, but each 0xff becomes a 3-byte U+FFFD when
+    // decoded. The line must be rejected rather than serialized past the limit.
+    let mut input = b"PRIVMSG #c :".to_vec();
+    input.extend_from_slice(&[0xff; 8000]);
+    assert!(input.len() <= uu_irc::message::MAX_LINE);
+    check(&input);
+
+    // Short lossy lines are still accepted and round-trip unchanged.
+    check(b"PRIVMSG #c :\xff\xfe");
+}
