@@ -9,10 +9,15 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
+tokio = { version = "1", features = ["rt", "net", "io-util", "macros", "sync", "time"] }
 
 [dependencies.uu-irc]
 path = ".."
 default-features = false
+features = ["net"]
+
+
+
 
 [[bin]]
 name = "decode"
@@ -23,3 +28,31 @@ bench = false
 
 [workspace]
 members = ["."]
+
+[[bin]]
+name = "encode"
+path = "fuzz_targets/encode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "reader"
+path = "fuzz_targets/reader.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "tags"
+path = "fuzz_targets/tags.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "display"
+path = "fuzz_targets/display.rs"
+test = false
+doc = false
+bench = false

@@ -1,3 +1,4 @@
 /target
 /examples.txt
-IGNORE_LOG_0
+/IGNORE_LOG_*
+/REPORT*
